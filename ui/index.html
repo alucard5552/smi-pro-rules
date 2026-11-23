@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMI Helper AI Bridge & Control Center — Autonomous Suite v3.2</title>
+  <style>
+    /* ==========================================================================
+       CYBERPUNK NEON PALETTE & GLASSMORPHISM
+       ========================================================================== */
+    :root {
+      --bg-dark: #07090e;
+      --bg-card: rgba(13, 18, 28, 0.78);
+      --bg-card-hover: rgba(20, 28, 45, 0.9);
+      --border-card: rgba(0, 243, 255, 0.22);
+      --border-glow: rgba(0, 243, 255, 0.6);
+      
+      --cyan: #00f3ff;
+      --cyan-glow: 0 0 15px rgba(0, 243, 255, 0.55), 0 0 30px rgba(0, 243, 255, 0.2);
+      --purple: #b026ff;
+      --purple-glow: 0 0 15px rgba(176, 38, 255, 0.55), 0 0 30px rgba(176, 38, 255, 0.2);
+      --emerald: #00ff88;
+      --emerald-glow: 0 0 15px rgba(0, 255, 136, 0.55), 0 0 30px rgba(0, 255, 136, 0.2);
+      --gold: #ffaa00;
+      --gold-glow: 0 0 15px rgba(255, 170, 0, 0.55);
+      --crimson: #ff0055;
+      
+      --text-main: #f0f4fc;
+      --text-muted: #8b9bb4;
+      --text-dim: #4d5c75;
+      
+      --font-code: 'Consolas', 'Courier New', monospace;
+      --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      overflow-x: hidden;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    #bg-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .ambient-glow {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(130px);
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.32;
+      animation: ambientFloat 14s infinite alternate ease-in-out;
+    }
+    .ambient-1 {
+      top: -10%;
+      left: 10%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(circle, var(--cyan) 0%, transparent 70%);
+    }
+    .ambient-2 {
+      bottom: -15%;
+      right: 5%;
+      width: 55vw;
+      height: 55vw;
+      background: radial-gradient(circle, var(--purple) 0%, transparent 70%);
+      animation-delay: -7s;
+    }
+
+    @keyframes ambientFloat {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(3vw, 5vh) scale(1.08); }
+      100% { transform: translate(-3vw, -4vh) scale(0.95); }
+    }
+
+    .app-container {
+      position: relative;
+      z-index: 2;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px 24px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ==========================================================================
+       ШАПКА (HEADER)
+       ========================================================================== */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background: rgba(10, 14, 22, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 243, 255, 0.25);
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--cyan-glow);
+      font-size: 24px;
+    }
+
+    .brand-text h1 {
+      font-size: 19px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #fff, var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-pro {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(0, 243, 255, 0.15);
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      letter-spacing: 1px;
+    }
+
+    .brand-text p {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--font-code);
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 30px;
+      background: rgba(0, 255, 136, 0.08);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      color: var(--emerald);
+      font-family: var(--font-code);
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.15);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--emerald);
+      box-shadow: var(--emerald-glow);
+      position: relative;
+    }
+
+    .pulse-dot::after {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--emerald);
+      animation: ripplePulse 1.8s infinite ease-out;
+    }
+
+    @keyframes ripplePulse {
+      0% { transform: scale(0.5); opacity: 1; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+
+    .btn-sound-toggle {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-muted);
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-sound-toggle:hover {
+      color: var(--cyan);
+      border-color: var(--cyan);
+    }
+
+    .btn-sessions-glow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(0, 243, 255, 0.2), rgba(176, 38, 255, 0.2));
+      border: 1px solid var(--cyan);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--cyan-glow);
+      transition: all 0.25s var(--ease-spring);
+    }
+    .btn-sessions-glow:hover {
+      background: linear-gradient(135deg, rgba(0, 243, 255, 0.4), rgba(176, 38, 255, 0.4));
+      transform: translateY(-2px) scale(1.03);
+    }
+
+    /* ==========================================================================
+       МЕТРИКИ ДАШБОРДА (4 КАРТОЧКИ)
+       ========================================================================== */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(14px);
+      border-radius: 16px;
+      padding: 20px 22px;
+      border: 1px solid var(--border-card);
+      transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+      cursor: pointer;
+    }
+    .metric-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--cyan);
+      box-shadow: var(--cyan-glow);
+    }
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .metric-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .metric-value {
+      font-size: 30px;
+      font-weight: 900;
+      font-family: var(--font-code);
+      color: #fff;
+    }
+    .metric-sub {
+      font-size: 12px;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ==========================================================================
+       НАВИГАЦИЯ ПО ВКЛАДКАМ
+       ========================================================================== */
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      background: rgba(10, 14, 22, 0.88);
+      padding: 6px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      padding: 12px 18px;
+      border-radius: 12px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.25s var(--ease-spring);
+      white-space: nowrap;
+    }
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .tab-btn.active {
+      color: var(--cyan);
+      background: rgba(0, 243, 255, 0.12);
+      border: 1px solid var(--cyan);
+      box-shadow: var(--cyan-glow), inset 0 0 15px rgba(0, 243, 255, 0.08);
+    }
+
+    /* ==========================================================================
+       КОНТЕНТ ВКЛАДОК
+       ========================================================================== */
+    .tab-content {
+      display: none;
+      animation: tabFadeIn 0.3s var(--ease-smooth);
+    }
+    .tab-content.active {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    @keyframes tabFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .panel-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-card);
+      border-radius: 18px;
+      padding: 24px;
+      position: relative;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      padding-bottom: 14px;
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #ffffff;
+    }
+
+    .btn-sm {
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s var(--ease-spring);
+    }
+    .btn-sm:hover {
+      background: rgba(0, 243, 255, 0.15);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      transform: translateY(-2px);
+    }
+    .btn-sm.btn-purple { background: rgba(176, 38, 255, 0.2); border-color: var(--purple); color: #fff; }
+    .btn-sm.btn-emerald { background: rgba(0, 255, 136, 0.15); border-color: var(--emerald); color: var(--emerald); }
+    .btn-sm.btn-gold { background: rgba(255, 170, 0, 0.15); border-color: var(--gold); color: var(--gold); }
+    .btn-sm.btn-crimson { background: rgba(255, 0, 85, 0.15); border-color: var(--crimson); color: #ff5577; }
+
+    .eq-container {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 44px;
+      margin: 10px 0 16px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 10px;
+      padding: 6px 14px;
+    }
+    .eq-bar {
+      flex: 1;
+      background: linear-gradient(180deg, var(--cyan), var(--purple));
+      border-radius: 2px;
+      min-height: 4px;
+      animation: eqBounce 1.2s infinite ease-in-out alternate;
+    }
+    @keyframes eqBounce { 0% { height: 10%; } 50% { height: 85%; } 100% { height: 25%; } }
+
+    /* ==========================================================================
+       СЕТКА АККАУНТОВ
+       ========================================================================== */
+    .accounts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      margin-top: 14px;
+    }
+
+    .account-card {
+      background: rgba(13, 18, 28, 0.88);
+      border: 1px solid rgba(0, 243, 255, 0.25);
+      border-radius: 16px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.25s var(--ease-spring);
+      position: relative;
+    }
+    .account-card:hover {
+      border-color: var(--cyan);
+      box-shadow: 0 8px 24px rgba(0, 243, 255, 0.2);
+      transform: translateY(-3px);
+    }
+    .account-card.ready { border-color: rgba(0, 255, 136, 0.35); }
+    .account-card.ready:hover { border-color: var(--emerald); box-shadow: var(--emerald-glow); }
+    .account-card.unauthorized { border-color: rgba(255, 0, 85, 0.35); }
+
+    .acc-header { display: flex; justify-content: space-between; align-items: center; }
+    .acc-title { font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .acc-badge { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; }
+    .acc-badge.ready { background: rgba(0, 255, 136, 0.15); color: var(--emerald); border: 1px solid var(--emerald); }
+    .acc-badge.busy { background: rgba(255, 170, 0, 0.15); color: var(--gold); border: 1px solid var(--gold); }
+    .acc-badge.unauthorized { background: rgba(255, 0, 85, 0.15); color: var(--crimson); border: 1px solid var(--crimson); }
+    .acc-badge.offline { background: rgba(255, 255, 255, 0.08); color: var(--text-muted); border: 1px solid rgba(255, 255, 255, 0.15); }
+
+    .acc-details {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-family: var(--font-code);
+      background: rgba(0, 0, 0, 0.25);
+      padding: 8px 12px;
+      border-radius: 8px;
+    }
+
+    .acc-actions { display: flex; gap: 8px; margin-top: 4px; }
+    .acc-btn {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .acc-btn-login { background: rgba(0, 243, 255, 0.15); border: 1px solid var(--cyan); color: var(--cyan); }
+    .acc-btn-login:hover { background: var(--cyan); color: #000; box-shadow: var(--cyan-glow); }
+    .acc-btn-del { background: rgba(255, 0, 85, 0.1); border: 1px solid rgba(255, 0, 85, 0.3); color: #ff5577; }
+    .acc-btn-del:hover { background: var(--crimson); color: #fff; }
+    .acc-btn-vis { background: rgba(184, 41, 247, 0.15); border: 1px solid var(--purple); color: #df8aff; }
+    .acc-btn-vis:hover { background: var(--purple); color: #fff; }
+
+    /* ==========================================================================
+       ПОЛЯ ВВОДА И ТЕКСТОВЫЕ РЕДАКТОРЫ
+       ========================================================================== */
+    .cyber-textarea {
+      width: 100%;
+      min-height: 90px;
+      background: rgba(5, 8, 14, 0.85);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      color: #fff;
+      font-family: var(--font-code);
+      padding: 12px 14px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s;
+      resize: vertical;
+    }
+    .cyber-textarea:focus { border-color: var(--cyan); box-shadow: var(--cyan-glow); }
+
+    .cyber-input {
+      width: 100%;
+      background: rgba(5, 8, 14, 0.85);
+      border: 1px solid var(--border-card);
+      border-radius: 10px;
+      color: #fff;
+      font-family: var(--font-code);
+      padding: 10px 14px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .cyber-input:focus { border-color: var(--cyan); box-shadow: var(--cyan-glow); }
+
+    .preset-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      margin: 4px;
+      transition: all 0.2s;
+    }
+    .preset-chip:hover {
+      background: rgba(0, 243, 255, 0.15);
+      border-color: var(--cyan);
+      color: #fff;
+    }
+
+    .result-display {
+      margin-top: 14px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(0, 243, 255, 0.25);
+      border-radius: 14px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .result-text-main {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.5;
+      font-family: var(--font-ui);
+    }
+    .result-badges {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .badge-char-count {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: var(--font-code);
+    }
+    .badge-char-count.valid {
+      background: rgba(0, 255, 136, 0.15);
+      color: var(--emerald);
+      border: 1px solid var(--emerald);
+    }
+    .badge-char-count.invalid {
+      background: rgba(255, 0, 85, 0.15);
+      color: var(--crimson);
+      border: 1px solid var(--crimson);
+    }
+
+    /* ==========================================================================
+       ТЕРМИНАЛ И ЛОГИ
+       ========================================================================== */
+    .terminal-box {
+      background: #030508;
+      border: 1px solid rgba(0, 243, 255, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      min-height: 320px;
+      max-height: 520px;
+      overflow-y: auto;
+      font-family: var(--font-code);
+      font-size: 12px;
+    }
+    .log-line {
+      margin-bottom: 5px;
+      display: flex;
+      gap: 8px;
+      line-height: 1.4;
+      word-break: break-all;
+    }
+    .log-time { color: var(--text-dim); }
+    .tag-sys { color: var(--cyan); }
+    .tag-teach { color: var(--emerald); }
+    .tag-sync { color: var(--gold); }
+    .tag-err { color: var(--crimson); }
+    .tag-edge { color: var(--purple); }
+
+    /* ==========================================================================
+       ТОСТ УВЕДОМЛЕНИЯ
+       ========================================================================== */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(13, 18, 28, 0.95);
+      border: 1px solid var(--cyan);
+      box-shadow: var(--cyan-glow);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s var(--ease-spring);
+      z-index: 9999;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ==========================================================================
+       МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ
+       ========================================================================== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(4, 7, 12, 0.85);
+      backdrop-filter: blur(16px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background: rgba(13, 18, 28, 0.96);
+      border: 1px solid var(--cyan);
+      box-shadow: 0 0 35px rgba(0, 243, 255, 0.35), 0 20px 60px rgba(0, 0, 0, 0.8);
+      border-radius: 20px;
+      width: 90%;
+      max-width: 560px;
+      padding: 26px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 12px;
+    }
+    .modal-title-box h3 {
+      font-size: 17px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-title-box p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-family: var(--font-code);
+    }
+    .modal-close-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    .modal-close-btn:hover { background: rgba(255, 0, 85, 0.2); border-color: var(--crimson); color: #fff; }
+
+    .modal-tabs {
+      display: flex;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 4px;
+      border-radius: 12px;
+    }
+    .modal-tab-btn {
+      flex: 1;
+      padding: 9px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .modal-tab-btn.active {
+      background: rgba(0, 243, 255, 0.15);
+      color: var(--cyan);
+      border: 1px solid var(--cyan);
+    }
+    .modal-tab-pane { display: none; flex-direction: column; gap: 14px; }
+    .modal-tab-pane.active { display: flex; }
+
+    .input-field-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-field-group label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-main);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .modal-input {
+      background: rgba(5, 8, 14, 0.9);
+      border: 1px solid rgba(0, 243, 255, 0.3);
+      border-radius: 10px;
+      color: #fff;
+      font-family: var(--font-code);
+      padding: 12px 14px;
+      font-size: 13px;
+      outline: none;
+    }
+    .modal-input:focus { border-color: var(--cyan); box-shadow: var(--cyan-glow); }
+
+    .auth-status-card {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(0, 243, 255, 0.3);
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 4px;
+    }
+    .auth-status-card.active { display: flex; }
+    .spinner-neon {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(0, 243, 255, 0.2);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-dim);
+      font-size: 11px;
+      font-family: var(--font-code);
+      margin-top: 10px;
+      padding: 0 4px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+  <div class="ambient-glow ambient-1"></div>
+  <div class="ambient-glow ambient-2"></div>
+
+  <div class="app-container">
+
+    <!-- 1. ШАПКА -->
+    <header>
+      <div class="brand-group">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-text">
+          <h1>SMI CONTROL CENTER <span class="badge-pro">SUITE V3.2</span></h1>
+          <p>AUTONOMOUS DEEPSEEK & CAMOUFOX ENGINE // PORT 8085 // 0 DEPENDENCIES</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-sound-toggle" id="sound-toggle-btn" onclick="toggleSound()">🔊 Звук</button>
+        <div class="status-pill" id="header-status-pill">
+          <div class="pulse-dot"></div>
+          <span id="header-status-text">ИНИЦИАЛИЗАЦИЯ...</span>
+        </div>
+        <button class="btn-sessions-glow" onclick="switchTab('accounts')">
+          <span>👥 Аккаунты</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 2. МЕТРИКИ ДАШБОРДА (4 КАРТОЧКИ) -->
+    <div class="metrics-grid">
+      <div class="metric-card" onclick="switchTab('dashboard')">
+        <div class="metric-header">
+          <span class="metric-title">Статус моста</span>
+          <span style="font-size: 18px;">📡</span>
+        </div>
+        <div class="metric-value" style="color: var(--emerald);" id="card-bridge-status">ONLINE :8085</div>
+        <div class="metric-sub" style="color: var(--emerald);">
+          <span>● Пинг: <strong id="card-ping-val">0</strong> мс</span>
+          <span>● SMI Helper v3.2</span>
+        </div>
+      </div>
+
+      <div class="metric-card" onclick="switchTab('accounts')">
+        <div class="metric-header">
+          <span class="metric-title">Пул DeepSeek</span>
+          <span style="font-size: 18px;">🦊</span>
+        </div>
+        <div class="metric-value" style="color: var(--cyan);" id="card-accounts-count">0 ГОТОВО</div>
+        <div class="metric-sub" style="color: var(--cyan);">
+          <span>● Camoufox Stealth</span>
+          <span>● Round-Robin</span>
+        </div>
+      </div>
+
+      <div class="metric-card" onclick="switchTab('teach')">
+        <div class="metric-header">
+          <span class="metric-title">Дообучение & Правила</span>
+          <span style="font-size: 18px;">🧠</span>
+        </div>
+        <div class="metric-value" style="color: var(--gold);" id="card-custom-rules">0 ПРАВИЛ</div>
+        <div class="metric-sub" style="color: var(--gold);">
+          <span>● Веб-поиск активен</span>
+          <span id="card-github-sha">● Git: ...</span>
+        </div>
+      </div>
+
+      <div class="metric-card" onclick="switchTab('samp')">
+        <div class="metric-header">
+          <span class="metric-title">Moonloader & Игра</span>
+          <span style="font-size: 18px;">🎮</span>
+        </div>
+        <div class="metric-value" style="color: var(--purple);" id="card-lua-status">ПРОВЕРКА...</div>
+        <div class="metric-sub" style="color: var(--purple);">
+          <span id="card-lua-sub">● SMI Helper v3.2.lua</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. НАВИГАЦИЯ ПО ВКЛАДКАМ (6 ВКЛАДОК) -->
+    <div class="nav-tabs">
+      <button class="tab-btn active" id="tab-btn-dashboard" onclick="switchTab('dashboard')">⚡ Дашборд</button>
+      <button class="tab-btn" id="tab-btn-accounts" onclick="switchTab('accounts')">👥 Аккаунты DeepSeek</button>
+      <button class="tab-btn" id="tab-btn-teach" onclick="switchTab('teach')">🧠 Дообучение & Правила ПРО</button>
+      <button class="tab-btn" id="tab-btn-editor" onclick="switchTab('editor')">🤖 Тестер AI ПРО</button>
+      <button class="tab-btn" id="tab-btn-samp" onclick="switchTab('samp')">🎮 Интеграция с SAMP</button>
+      <button class="tab-btn" id="tab-btn-telemetry" onclick="switchTab('telemetry')">📜 Системный терминал</button>
+    </div>
+
+    <!-- ========================================================================
+         ВКЛАДКА 1: ДАШБОРД МОСТА
+         ======================================================================== -->
+    <div class="tab-content active" id="tab-dashboard">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">📡 Состояние автономного сервиса (Порт 8085)</div>
+          <span class="badge-pro" style="font-size: 11px;">СЕРВЕР АКТИВЕН</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6;">
+          Автономный AI мост непрерывно принимает запросы от <strong>SMI Helper v3.2.0</strong> в GTA SA.
+          Запросы обрабатываются через скрытые сессии Camoufox с глубоким веб-поиском, авто-сохранением чисел и строгим лимитом <strong>&le; 65 символов</strong>.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 16px;">
+          <div style="background: rgba(0, 243, 255, 0.05); border: 1px solid rgba(0, 243, 255, 0.2); border-radius: 12px; padding: 14px;">
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--cyan); font-weight: 700;">API Эндпоинт для хелпера</div>
+            <div style="font-size: 15px; font-weight: 800; color: #fff; font-family: var(--font-code); margin-top: 4px;">http://127.0.0.1:8085/v1</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">OpenAI Chat Completions API</div>
+          </div>
+          <div style="background: rgba(0, 255, 136, 0.05); border: 1px solid rgba(0, 255, 136, 0.2); border-radius: 12px; padding: 14px;">
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--emerald); font-weight: 700;">Эндпоинт онлайн-дообучения</div>
+            <div style="font-size: 15px; font-weight: 800; color: #fff; font-family: var(--font-code); margin-top: 4px;">/api/ai/teach_and_reedit</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">С нативным веб-поиском (Web Search)</div>
+          </div>
+          <div style="background: rgba(255, 170, 0, 0.05); border: 1px solid rgba(255, 170, 0, 0.2); border-radius: 12px; padding: 14px;">
+            <div style="font-size: 11px; text-transform: uppercase; color: var(--gold); font-weight: 700;">Кэш ОЗУ (мгновенно 0.001с)</div>
+            <div style="font-size: 15px; font-weight: 800; color: #fff; font-family: var(--font-code); margin-top: 4px;" id="dash-cache-count">0 записей</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Мгновенная выдача повторов</div>
+          </div>
+        </div>
+
+        <div class="eq-container" id="eq-bars"></div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+          <button class="btn-sessions-glow" onclick="switchTab('accounts')">👥 Менеджер аккаунтов</button>
+          <button class="btn-sm btn-gold" onclick="switchTab('teach')">🧠 Дообучить ИИ с поиском в сети</button>
+          <button class="btn-sm btn-purple" onclick="switchTab('editor')">🤖 Тестер AI ПРО</button>
+          <button class="btn-sm btn-crimson" onclick="clearFastCache()">🧹 Очистить кэш ОЗУ</button>
+          <button class="btn-sm" onclick="syncGithubRules(true)">🔄 Синхронизировать GitHub</button>
+          <button class="btn-sm" onclick="pingBridgeManual()">⚡ Проверить пинг</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================
+         ВКЛАДКА 2: МЕНЕДЖЕР АККАУНТОВ DEEPSEEK
+         ======================================================================== -->
+    <div class="tab-content" id="tab-accounts">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">👥 Менеджер пула аккаунтов DeepSeek (Camoufox Stealth)</div>
+          <span class="badge-pro" id="accounts-counter-badge">АККАУНТОВ: 0</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
+          Подключите неограниченное количество аккаунтов DeepSeek. Воркеры автоматически распределяют объявления по схеме <strong>Round-Robin</strong>, изолированно держат свои браузерные контексты и не мешают друг другу.
+        </p>
+
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+          <button class="btn-sessions-glow" onclick="addNewAccount()">
+            <span>➕ Добавить новый аккаунт</span>
+          </button>
+          <button class="btn-sm" onclick="loadAccounts(true)">
+            <span>🔄 Обновить список</span>
+          </button>
+          <button class="btn-sm btn-purple" onclick="hideAllBrowsers()">
+            <span>🙈 Скрыть все окна в фон</span>
+          </button>
+        </div>
+
+        <div class="accounts-grid" id="accounts-container"></div>
+      </div>
+    </div>
+
+    <!-- ========================================================================
+         ВКЛАДКА 3: ЦЕНТР ДООБУЧЕНИЯ И БАЗА ПРАВИЛ
+         ======================================================================== -->
+    <div class="tab-content" id="tab-teach">
+      <!-- 3.1 Блок интерактивного дообучения с веб-поиском -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">🧠 Интерактивное дообучение ИИ с глубоким поиском в сети (Web Search)</div>
+          <span class="badge-pro" style="color: var(--emerald); border-color: var(--emerald);">ОНЛАЙН-ИССЛЕДОВАНИЕ</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.6;">
+          ИИ не просто принимает ваш текст, а <strong>активирует нативный веб-поиск DeepSeek</strong>, сканирует форум <code>forum.arizona-rp.com</code> и базы данных серверов, определяет категорию (БК, банда, а/м, к/а, о/п, б/з), регламент маек/рангов и сохранение чисел, после чего вносит выверенное правило в <code>CUSTOM_LEARNED_RULES.txt</code>.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--cyan); text-transform: uppercase;">Исходное объявление от игрока:</label>
+            <input type="text" class="cyber-input" id="teach-ad-input" style="margin-top: 6px;" placeholder="например: Набор в Warlock MC на 7 майку.Вакантно 2 место на 9" value="Набор в Warlock MC на 7 майку.Вакантно 2 место на 9">
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: var(--emerald); text-transform: uppercase;">Пояснение ошибки / как надо по ПРО:</label>
+            <input type="text" class="cyber-input" id="teach-exp-input" style="margin-top: 6px;" placeholder="например: Варлок это БК, майка это ранг, вакантно 2 места на 9. Сохранять все числа" value="Варлок МС это БК байкерский клуб Warlock MC, майка 7 это ранг, вакантно 2 места на 9 майку. Сохранять обязательно все числа">
+          </div>
+        </div>
+
+        <button class="btn-sessions-glow" style="width: 100%; justify-content: center;" id="btn-run-teach" onclick="runAiTeachWithWebSearch()">
+          <span>🔍 Исследовать в сети через DeepSeek и дообучить ИИ</span>
+        </button>
+
+        <div class="result-display" id="teach-result-card" style="display: none;">
+          <div style="font-size: 12px; text-transform: uppercase; color: var(--emerald); font-weight: 800;">✅ Сформулированное правило из веб-поиска (сохранено в CUSTOM_LEARNED_RULES.txt):</div>
+          <div style="font-size: 14px; font-family: var(--font-code); color: #fff; background: rgba(0,255,136,0.08); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(0,255,136,0.3);" id="teach-rule-text"></div>
+          <div style="font-size: 12px; text-transform: uppercase; color: var(--cyan); font-weight: 800; margin-top: 6px;">Результат мгновенного перередактирования:</div>
+          <div class="result-text-main" id="teach-reedit-text"></div>
+        </div>
+      </div>
+
+      <!-- 3.2 Редактор файла CUSTOM_LEARNED_RULES.txt -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">📄 Локальная база дообученных правил (CUSTOM_LEARNED_RULES.txt)</div>
+          <span class="badge-pro" id="custom-rules-lines-badge">0 СТРОК</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6;">
+          Этот файл <strong>100% защищен от перезаписи с GitHub</strong>. Вы можете напрямую редактировать правила, удалять устаревшие или добавлять свои строки.
+        </p>
+        <textarea class="cyber-textarea" id="custom-rules-editor" style="min-height: 180px; font-size: 13px;"></textarea>
+        <div style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;">
+          <button class="btn-sessions-glow" onclick="saveCustomRules()">💾 Сохранить правила на диск</button>
+          <button class="btn-sm" onclick="loadCustomRules(true)">🔄 Перечитать из файла</button>
+          <button class="btn-sm btn-gold" onclick="appendRuleTemplate()">➕ Вставить шаблон правила</button>
+        </div>
+      </div>
+
+      <!-- 3.3 Облачные правила ПРО (GitHub Sync) -->
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">☁️ Облачная синхронизация регламента ПРО (GitHub)</div>
+          <span class="badge-pro" style="color: var(--cyan);">GITHUB REPO</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 14px;">
+          <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Репозиторий</div>
+            <div style="font-size: 13px; font-weight: 700; color: #fff; font-family: var(--font-code); margin-top: 4px;">alucard5552/smi-pro-rules</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Git Blob SHA хэш</div>
+            <div style="font-size: 13px; font-weight: 700; color: var(--cyan); font-family: var(--font-code); margin-top: 4px;" id="gh-sha-val">Загрузка...</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);">
+            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Период авто-проверки</div>
+            <div style="font-size: 13px; font-weight: 700; color: var(--emerald); font-family: var(--font-code); margin-top: 4px;">Каждые 2 минуты (TTL 120с)</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <button class="btn-sessions-glow" onclick="syncGithubRules(true)">🔄 Принудительно синхронизировать сейчас</button>
+          <button class="btn-sm" onclick="viewMasterPromptModal()">👁️ Посмотреть базовый регламент ПРО</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================
+         ВКЛАДКА 4: ТЕСТЕР AI ПРО
+         ======================================================================== -->
+    <div class="tab-content" id="tab-editor">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">🤖 Интерактивный тестер AI ПРО (Реальный DeepSeek V3)</div>
+          <span class="badge-pro">ПОЛНАЯ ЭМУЛЯЦИЯ</span>
+        </div>
+        <div style="margin-bottom: 8px;">
+          <span style="font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Быстрые пресеты для теста:</span>
+        </div>
+        <div>
+          <div class="preset-chip" onclick="setPreset('Куплю инфернус фт 30кк')">🚗 инфернус фт 30кк</div>
+          <div class="preset-chip" onclick="setPreset('Набор в Warlock MC на 7 майку.Вакантно 2 место на 9')">🏍️ warlock mc 7 майка</div>
+          <div class="preset-chip" onclick="setPreset('набор в трб на 5 майку 3 места')">🤠 трб на 5 майку</div>
+          <div class="preset-chip" onclick="setPreset('набор в баллас на 5 майку')">🟣 баллас 5 майка</div>
+          <div class="preset-chip" onclick="setPreset('продам сет фрирен 88')">🎈 сет фрирен 88</div>
+          <div class="preset-chip" onclick="setPreset('продам скин венсдей 20кк')">👗 скин венсдей 20кк</div>
+          <div class="preset-chip" onclick="setPreset('собеседование в областную полицию')">👮 областная полиция</div>
+          <div class="preset-chip" onclick="setPreset('продам дом 557 в сф 50кк')">🏡 дом 557 в сф</div>
+          <div class="preset-chip" onclick="setPreset('продам биз 128 100кк')">🏢 биз 128</div>
+        </div>
+
+        <textarea class="cyber-textarea" id="ad-input" style="margin-top: 12px;" placeholder="Введите любое объявление игрока...">Набор в Warlock MC на 7 майку.Вакантно 2 место на 9</textarea>
+
+        <div style="display: flex; gap: 10px; margin-top: 12px;">
+          <button class="btn-sessions-glow" style="flex: 1; justify-content: center;" id="btn-run-edit" onclick="runAiEdit(false)">
+            <span>⚡ Отредактировать по ПРО (мгновенно)</span>
+          </button>
+          <button class="btn-sm btn-gold" style="padding: 10px 18px;" onclick="runAiEdit(true)">
+            <span>🌐 С веб-поиском</span>
+          </button>
+        </div>
+
+        <div class="result-display" id="tester-result-box">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12px; text-transform: uppercase; color: var(--cyan); font-weight: 800;">Готовое объявление для подачи:</span>
+            <div class="result-badges">
+              <span class="badge-char-count valid" id="badge-length">0 / 65 СИМВ.</span>
+              <span class="badge-pro" id="badge-time">0 МС</span>
+            </div>
+          </div>
+          <div class="result-text-main" id="res-output">В БК "Warlock MC" набор на 7 майку. Вакантно 2 места на 9.</div>
+          <div style="display: flex; gap: 8px; margin-top: 4px;">
+            <button class="btn-sm" onclick="copyResultText()">📋 Копировать результат</button>
+            <button class="btn-sm btn-purple" onclick="transferToTeach()">🧠 Отправить это объявление на дообучение</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================
+         ВКЛАДКА 5: ИНТЕГРАЦИЯ С SAMP И MOONLOADER
+         ======================================================================== -->
+    <div class="tab-content" id="tab-samp">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">🎮 Интеграция с GTA SA: SAMP и SMI Helper v3.2</div>
+          <span class="badge-pro" style="color: var(--emerald);">MOONLOADER READY</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6;">
+          Скрипт <code>SMI Helper v3.2.lua</code> загружается в Moonloader игры и связывается с локальным мостом по адресу <code>http://127.0.0.1:8085</code>.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 16px;">
+          <div style="background: rgba(0,0,0,0.3); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Расположение скрипта</div>
+            <div style="font-size: 13px; font-weight: 700; color: #fff; font-family: var(--font-code); margin-top: 4px;" id="samp-script-path">moonloader\SMI Helper v3.2.lua</div>
+            <div style="font-size: 12px; color: var(--emerald); margin-top: 4px;" id="samp-script-size">Статус: файл готов к работе</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Кодировка строк</div>
+            <div style="font-size: 13px; font-weight: 700; color: var(--cyan); font-family: var(--font-code); margin-top: 4px;">Windows-1251 (CP1251)</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">С автоматической конвертацией UTF-8</div>
+          </div>
+          <div style="background: rgba(0,0,0,0.3); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+            <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Кнопка дообучения в игре</div>
+            <div style="font-size: 13px; font-weight: 700; color: var(--gold); font-family: var(--font-code); margin-top: 4px;">[!] Перередактировать с объяснением</div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Прямо в блоке редактора объявлений</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <button class="btn-sessions-glow" onclick="runLuaSyntaxCheck()">
+            <span>🔍 Проверить синтаксис Lua через check_lua_syntax.py</span>
+          </button>
+        </div>
+
+        <div class="terminal-box" id="lua-check-box" style="min-height: 120px; max-height: 220px;">
+          <div class="log-line"><span class="log-time">[SAMP]</span><span>Нажмите кнопку выше для проверки синтаксиса скрипта Lua.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================
+         ВКЛАДКА 6: СИСТЕМНЫЙ ТЕРМИНАЛ И АУДИТ
+         ======================================================================== -->
+    <div class="tab-content" id="tab-telemetry">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">📜 Системный терминал и аудит событий моста</div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-sm" onclick="fetchLiveLogs(true)">🔄 Обновить</button>
+            <button class="btn-sm btn-crimson" onclick="clearTerminalView()">🧹 Очистить вид</button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap;">
+          <button class="btn-sm" onclick="filterLogs('ALL')">Все логи</button>
+          <button class="btn-sm btn-gold" onclick="filterLogs('Teach')">🌐 Веб-поиск & Дообучение</button>
+          <button class="btn-sm" onclick="filterLogs('GitHub')">🔄 GitHub Sync</button>
+          <button class="btn-sm btn-emerald" onclick="filterLogs('SMI')">⚡ Запросы SMI</button>
+          <button class="btn-sm btn-purple" onclick="filterLogs('Camoufox')">🦊 Camoufox</button>
+        </div>
+
+        <div class="terminal-box" id="terminal-logs"></div>
+      </div>
+    </div>
+
+    <!-- ПОДВАЛ -->
+    <footer>
+      <span>SMI CONTROL CENTER SUITE // PORT 8085 // ARIZONA RP DRAKE</span>
+      <span id="footer-sync-time">STATUS: SYNCHRONIZED</span>
+    </footer>
+
+  </div>
+
+  <!-- ==========================================================================
+       МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ
+       ========================================================================== -->
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3>🔐 Авторизация DeepSeek <span class="badge-pro" id="auth-modal-badge">0 ОКОН</span></h3>
+          <p id="auth-modal-subtitle">Подключение Аккаунта #1 в 100% фоновом режиме</p>
+        </div>
+        <button class="modal-close-btn" onclick="closeAuthModal()">✕</button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab-btn active" id="mtab-btn-headless" onclick="switchAuthTab('headless')">⚡ Вход в фоне (0 окон)</button>
+        <button class="modal-tab-btn" id="mtab-btn-token" onclick="switchAuthTab('token')">📋 Вставить токен</button>
+        <button class="modal-tab-btn" id="mtab-btn-window" onclick="switchAuthTab('window')">🌐 Окно браузера</button>
+      </div>
+
+      <!-- Вкладка 1: Фоновый вход по Email и Паролю -->
+      <div class="modal-tab-pane active" id="mtab-pane-headless">
+        <div class="input-field-group">
+          <label>Email или Телефон от DeepSeek</label>
+          <input type="text" class="modal-input" id="auth-email-input" placeholder="например: user@mail.ru или +79991234567" autocomplete="off">
+        </div>
+        <div class="input-field-group">
+          <label>Пароль от DeepSeek</label>
+          <input type="password" class="modal-input" id="auth-pwd-input" placeholder="••••••••••••" autocomplete="new-password">
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted); background: rgba(0, 243, 255, 0.05); padding: 10px; border-radius: 8px; border: 1px solid rgba(0, 243, 255, 0.15);">
+          🛡️ <strong>100% Фоновый режим:</strong> Camoufox авторизуется скрытно в фоновом процессе. Окна на экране не появятся.
+        </div>
+        <button class="btn-sessions-glow" style="justify-content: center; width: 100%;" id="btn-submit-headless" onclick="submitHeadlessLogin()">
+          <span>🚀 Войти в фоне (0 окон)</span>
+        </button>
+      </div>
+
+      <!-- Вкладка 2: Вставка токена напрямую -->
+      <div class="modal-tab-pane" id="mtab-pane-token">
+        <div class="input-field-group">
+          <label>userToken (JWT токен сессии)</label>
+          <textarea class="modal-input" id="auth-token-input" style="min-height: 90px; resize: vertical;" placeholder="Вставьте строку userToken (например: eyJhbGciOi...)"></textarea>
+        </div>
+        <button class="btn-sessions-glow" style="justify-content: center; width: 100%;" onclick="submitTokenImport()">
+          <span>💾 Сохранить токен мгновенно</span>
+        </button>
+      </div>
+
+      <!-- Вкладка 3: Резервное окно браузера -->
+      <div class="modal-tab-pane" id="mtab-pane-window">
+        <div style="font-size: 12px; color: var(--text-muted); background: rgba(176, 38, 255, 0.08); padding: 10px; border-radius: 8px; border: 1px solid rgba(176, 38, 255, 0.3);">
+          ⚠️ <strong>Резервный вариант:</strong> Откроет видимое окно браузера Camoufox для ручного входа или капчи.
+        </div>
+        <button class="btn-sm btn-purple" style="padding: 12px; justify-content: center; width: 100%;" onclick="submitBrowserWindowLogin()">
+          <span>🌐 Открыть окно Camoufox (ручной вход)</span>
+        </button>
+      </div>
+
+      <!-- Статус-бокс фонового процесса -->
+      <div class="auth-status-card" id="auth-status-card">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; color: var(--cyan);">
+          <div class="spinner-neon" id="auth-spinner"></div>
+          <span id="auth-status-text">Инициализация фоновой сессии...</span>
+        </div>
+        <div style="font-size: 11px; color: var(--text-dim); font-family: var(--font-code);" id="auth-status-sub">Пожалуйста, подождите...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО ПРОСМОТРА БАЗОВОГО ПРОМПТА -->
+  <div class="modal-overlay" id="master-modal">
+    <div class="modal-card" style="max-width: 800px;">
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <h3>📜 Базовый регламент ПРО <span class="badge-pro">GITHUB MASTER</span></h3>
+          <p id="master-modal-sha">GEMINI_NEW_CHAT_MASTER_PROMPT.txt</p>
+        </div>
+        <button class="modal-close-btn" onclick="closeMasterModal()">✕</button>
+      </div>
+      <textarea class="cyber-textarea" id="master-prompt-viewer" style="min-height: 380px; font-size: 12px;" readonly></textarea>
+      <div style="display: flex; justify-content: flex-end;">
+        <button class="btn-sm" onclick="closeMasterModal()">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast">🔔 Уведомление</div>
+
+  <script>
+    /* ==========================================================================
+       ЗВУКОВОЙ ДВИЖОК (WEB AUDIO API MICRO-FEEDBACK)
+       ========================================================================== */
+    let audioEnabled = true;
+    let audioCtx = null;
+
+    function playBeep(freq = 600, duration = 0.05, type = 'sine') {
+      if (!audioEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch(e) {}
+    }
+
+    function toggleSound() {
+      audioEnabled = !audioEnabled;
+      const btn = document.getElementById('sound-toggle-btn');
+      if (btn) btn.textContent = audioEnabled ? '🔊 Звук' : '🔇 Без звука';
+      showToast(audioEnabled ? 'Звуковые эффекты включены' : 'Звук отключен');
+    }
+
+    /* ==========================================================================
+       НАВИГАЦИЯ ПО ВКЛАДКАМ
+       ========================================================================== */
+    function switchTab(id) {
+      playBeep(700, 0.04);
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      
+      const t = document.getElementById(`tab-${id}`);
+      if (t) t.classList.add('active');
+
+      const btn = document.getElementById(`tab-btn-${id}`);
+      if (btn) btn.classList.add('active');
+
+      if (id === 'accounts') loadAccounts();
+      if (id === 'teach') loadCustomRules();
+      if (id === 'telemetry') fetchLiveLogs(true);
+      if (id === 'samp') fetchScriptStatus();
+    }
+
+    /* ==========================================================================
+       МОНИТОРИНГ СЕРВЕРА И ПИНГ
+       ========================================================================== */
+    let pingStartTime = 0;
+
+    function pingBridge() {
+      pingStartTime = performance.now();
+      fetch('http://127.0.0.1:8085/health')
+        .then(r => r.json())
+        .then(data => {
+          const latency = Math.round(performance.now() - pingStartTime);
+          const pill = document.getElementById('header-status-pill');
+          const pillText = document.getElementById('header-status-text');
+          const bridgeCard = document.getElementById('card-bridge-status');
+          const pingVal = document.getElementById('card-ping-val');
+          const accCountCard = document.getElementById('card-accounts-count');
+
+          if (pill) {
+            pill.style.background = 'rgba(0, 255, 136, 0.08)';
+            pill.style.borderColor = 'rgba(0, 255, 136, 0.3)';
+            pill.style.color = 'var(--emerald)';
+          }
+          if (pillText) pillText.textContent = `МОСТ АКТИВЕН (${data.ready_accounts || 0} ГОТОВО)`;
+          if (bridgeCard) bridgeCard.textContent = 'ONLINE :8085';
+          if (pingVal) pingVal.textContent = latency;
+          if (accCountCard) accCountCard.textContent = `${data.ready_accounts || 0} ГОТОВО (ИЗ ${data.total_accounts || 0})`;
+        })
+        .catch(() => {
+          const pill = document.getElementById('header-status-pill');
+          const pillText = document.getElementById('header-status-text');
+          const bridgeCard = document.getElementById('card-bridge-status');
+          if (pill) {
+            pill.style.background = 'rgba(255, 0, 85, 0.15)';
+            pill.style.borderColor = 'var(--crimson)';
+            pill.style.color = '#ff4d79';
+          }
+          if (pillText) pillText.textContent = 'ОФФЛАЙН (ЗАПУСК СЕРВЕРА)';
+          if (bridgeCard) bridgeCard.textContent = 'OFFLINE';
+        });
+
+      // Также запрашиваем статистику кэша и правил
+      fetch('http://127.0.0.1:8085/api/cache/stats')
+        .then(r => r.json())
+        .then(d => {
+          const c = document.getElementById('dash-cache-count');
+          if (c) c.textContent = `${d.cache_size || 0} записей`;
+        }).catch(() => {});
+
+      fetch('http://127.0.0.1:8085/api/rules/status')
+        .then(r => r.json())
+        .then(d => {
+          const rCard = document.getElementById('card-custom-rules');
+          const gSha = document.getElementById('card-github-sha');
+          const ghVal = document.getElementById('gh-sha-val');
+          if (rCard) rCard.textContent = `${d.custom_rules_lines || 0} ПРАВИЛ`;
+          if (gSha) gSha.textContent = `● Git: ${(d.git_blob_sha || '').substring(0, 8) || 'актуален'}`;
+          if (ghVal) ghVal.textContent = d.git_blob_sha || 'Синхронизирован';
+        }).catch(() => {});
+    }
+
+    function pingBridgeManual() {
+      playBeep(900, 0.08);
+      showToast('Проверка связи с портом 8085...');
+      pingBridge();
+      setTimeout(() => showToast('Мост активен, задержка минимальна!'), 400);
+    }
+
+    /* ==========================================================================
+       УПРАВЛЕНИЕ АККАУНТАМИ
+       ========================================================================== */
+    function loadAccounts(showNotification = false) {
+      fetch('http://127.0.0.1:8085/api/accounts')
+        .then(r => r.json())
+        .then(data => {
+          const container = document.getElementById('accounts-container');
+          const counter = document.getElementById('accounts-counter-badge');
+          if (!container) return;
+
+          const accounts = data.accounts || [];
+          if (counter) counter.textContent = `ВСЕГО: ${accounts.length} | ГОТОВО: ${data.ready || 0}`;
+
+          container.innerHTML = '';
+          accounts.forEach(acc => {
+            const card = document.createElement('div');
+            card.className = `account-card ${acc.status}`;
+
+            let badgeHtml = '';
+            if (acc.status === 'ready') badgeHtml = '<span class="acc-badge ready">● ГОТОВ К РАБОТЕ</span>';
+            else if (acc.status === 'busy') badgeHtml = '<span class="acc-badge busy">● В РАБОТЕ</span>';
+            else if (acc.status === 'offline') badgeHtml = '<span class="acc-badge offline">○ ОФФЛАЙН</span>';
+            else badgeHtml = '<span class="acc-badge unauthorized">✕ ТРЕБУЕТСЯ ВХОД</span>';
+
+            const visBtnHtml = acc.visible
+              ? `<button class="acc-btn acc-btn-vis" onclick="toggleVisibility(${acc.id}, false)">🙈 Скрыть окно</button>`
+              : `<button class="acc-btn acc-btn-vis" onclick="toggleVisibility(${acc.id}, true)">👁️ Показать окно</button>`;
+
+            card.innerHTML = `
+              <div class="acc-header">
+                <div class="acc-title">🦊 ${acc.name}</div>
+                ${badgeHtml}
+              </div>
+              <div class="acc-details">
+                <div><strong>Файл сессии:</strong> ${acc.session_file}</div>
+                <div><strong>Размер токена:</strong> ${acc.size_kb} КБ</div>
+                <div><strong>Движок:</strong> Camoufox C++ Stealth (${acc.visible ? 'Окно на экране' : 'Скрыт в фоне'})</div>
+              </div>
+              <div class="acc-actions">
+                <button class="acc-btn acc-btn-login" onclick="openAuthModal(${acc.id})">🔑 Войти / Обновить</button>
+                ${visBtnHtml}
+                <button class="acc-btn acc-btn-del" onclick="deleteAccount(${acc.id})">🗑️</button>
+              </div>
+            `;
+            container.appendChild(card);
+          });
+
+          if (showNotification) showToast(`Обновлено: ${accounts.length} акк.`);
+        })
+        .catch(() => {});
+    }
+
+    function toggleVisibility(id, show) {
+      playBeep(650, 0.05);
+      const action = show ? 'show' : 'hide';
+      fetch(`http://127.0.0.1:8085/api/accounts/${action}?id=${id}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          showToast(data.message || 'Видимость изменена');
+          loadAccounts();
+        });
+    }
+
+    function hideAllBrowsers() {
+      playBeep(600, 0.05);
+      fetch('http://127.0.0.1:8085/api/accounts/hide_all', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          showToast(data.message || 'Все окна скрыты в фон');
+          loadAccounts();
+        });
+    }
+
+    function deleteAccount(id) {
+      if (!confirm(`Удалить сессию Аккаунта #${id}?`)) return;
+      playBeep(400, 0.08);
+      fetch(`http://127.0.0.1:8085/api/accounts/delete?id=${id}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          showToast(data.message || 'Сессия удалена');
+          loadAccounts();
+        });
+    }
+
+    function addNewAccount() {
+      playBeep(800, 0.05);
+      fetch('http://127.0.0.1:8085/api/accounts')
+        .then(r => r.json())
+        .then(data => {
+          const accounts = data.accounts || [];
+          const existingIds = accounts.map(a => a.id);
+          const nextId = existingIds.length > 0 ? Math.max(...existingIds) + 1 : 1;
+          openAuthModal(nextId);
+        })
+        .catch(() => openAuthModal(1));
+    }
+
+    /* ==========================================================================
+       МОДАЛКА АВТОРИЗАЦИИ
+       ========================================================================== */
+    let currentAuthId = 1;
+    let authPollTimer = null;
+
+    function openAuthModal(id) {
+      currentAuthId = id;
+      const modal = document.getElementById('auth-modal');
+      const title = document.getElementById('auth-modal-subtitle');
+      if (title) title.textContent = `Подключение Аккаунта #${id} в 100% фоновом режиме`;
+      document.getElementById('auth-email-input').value = '';
+      document.getElementById('auth-pwd-input').value = '';
+      document.getElementById('auth-token-input').value = '';
+      const sc = document.getElementById('auth-status-card');
+      if (sc) sc.classList.remove('active');
+      switchAuthTab('headless');
+      if (modal) modal.classList.add('active');
+    }
+
+    function closeAuthModal() {
+      playBeep(500, 0.04);
+      const modal = document.getElementById('auth-modal');
+      if (modal) modal.classList.remove('active');
+      if (authPollTimer) clearInterval(authPollTimer);
+    }
+
+    function switchAuthTab(tab) {
+      playBeep(650, 0.03);
+      document.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.modal-tab-pane').forEach(p => p.classList.remove('active'));
+      const btn = document.getElementById(`mtab-btn-${tab}`);
+      const pane = document.getElementById(`mtab-pane-${tab}`);
+      if (btn) btn.classList.add('active');
+      if (pane) pane.classList.add('active');
+    }
+
+    function submitHeadlessLogin() {
+      const email = document.getElementById('auth-email-input').value.trim();
+      const pwd = document.getElementById('auth-pwd-input').value.trim();
+      if (!email || !pwd) { showToast('Введите Email и пароль!'); return; }
+
+      playBeep(850, 0.08);
+      const statusCard = document.getElementById('auth-status-card');
+      const statusText = document.getElementById('auth-status-text');
+      const statusSub = document.getElementById('auth-status-sub');
+      const btn = document.getElementById('btn-submit-headless');
+      if (statusCard) statusCard.classList.add('active');
+      if (statusText) statusText.textContent = 'Запуск скрытого Camoufox (0 окон)...';
+      if (btn) btn.disabled = true;
+
+      fetch('http://127.0.0.1:8085/api/accounts/login_headless', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentAuthId, email: email, password: pwd })
+      })
+      .then(r => r.json())
+      .then(() => {
+        showToast('Запущена скрытая авторизация...');
+        if (authPollTimer) clearInterval(authPollTimer);
+        authPollTimer = setInterval(() => {
+          fetch(`http://127.0.0.1:8085/api/accounts/auth_status?id=${currentAuthId}`)
+            .then(r => r.json())
+            .then(st => {
+              if (st.message && statusText) statusText.textContent = st.message;
+              if (st.status === 'ok') {
+                clearInterval(authPollTimer);
+                playBeep(1200, 0.15);
+                showToast(`Аккаунт #${currentAuthId} готов!`);
+                loadAccounts(true);
+                setTimeout(() => closeAuthModal(), 1200);
+              } else if (st.status === 'error') {
+                clearInterval(authPollTimer);
+                if (btn) btn.disabled = false;
+                playBeep(300, 0.1);
+                showToast('Ошибка входа!');
+              }
+            });
+        }, 1200);
+      });
+    }
+
+    function submitTokenImport() {
+      const token = document.getElementById('auth-token-input').value.trim();
+      if (!token) { showToast('Вставьте токен!'); return; }
+      playBeep(850, 0.06);
+      fetch('http://127.0.0.1:8085/api/accounts/import_token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentAuthId, token: token })
+      })
+      .then(r => r.json())
+      .then(d => {
+        playBeep(1200, 0.12);
+        showToast(d.message || 'Токен сохранен!');
+        loadAccounts(true);
+        setTimeout(() => closeAuthModal(), 800);
+      });
+    }
+
+    function submitBrowserWindowLogin() {
+      playBeep(700, 0.06);
+      fetch(`http://127.0.0.1:8085/api/accounts/login_browser?id=${currentAuthId}`, { method: 'POST' })
+        .then(() => {
+          showToast('Окно браузера открыто!');
+          closeAuthModal();
+        });
+    }
+
+    /* ==========================================================================
+       ДОХОДЯЩЕЕ ДООБУЧЕНИЕ И БАЗА ПРАВИЛ
+       ========================================================================== */
+    function runAiTeachWithWebSearch() {
+      const rawAd = document.getElementById('teach-ad-input').value.trim();
+      const exp = document.getElementById('teach-exp-input').value.trim();
+      if (!rawAd || !exp) { showToast('Заполните объявление и пояснение!'); return; }
+
+      playBeep(850, 0.08);
+      const btn = document.getElementById('btn-run-teach');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Исследую форум и базы Arizona RP через веб-поиск...</span>';
+
+      const resCard = document.getElementById('teach-result-card');
+      const ruleText = document.getElementById('teach-rule-text');
+      const reeditText = document.getElementById('teach-reedit-text');
+
+      fetch('http://127.0.0.1:8085/api/ai/teach_and_reedit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: rawAd, explanation: exp })
+      })
+      .then(r => r.json())
+      .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🔍 Исследовать в сети через DeepSeek и дообучить ИИ</span>';
+        if (data.status === 'ok') {
+          playBeep(1100, 0.15);
+          if (resCard) resCard.style.display = 'flex';
+          if (ruleText) ruleText.textContent = data.rule || 'Правило успешно добавлено.';
+          if (reeditText) reeditText.textContent = data.result || '';
+          showToast('ИИ успешно дообучен через поиск в сети!');
+          loadCustomRules();
+          pingBridge();
+        } else {
+          playBeep(350, 0.1);
+          showToast(`Ошибка: ${data.message || 'Сбой'}`);
+        }
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🔍 Исследовать в сети через DeepSeek и дообучить ИИ</span>';
+        showToast(`Ошибка сети: ${err}`);
+      });
+    }
+
+    function loadCustomRules(showNotification = false) {
+      fetch('http://127.0.0.1:8085/api/rules/custom')
+        .then(r => r.json())
+        .then(data => {
+          const editor = document.getElementById('custom-rules-editor');
+          const badge = document.getElementById('custom-rules-lines-badge');
+          if (editor) editor.value = data.content || '';
+          if (badge) badge.textContent = `${data.lines || 0} СТРОК`;
+          if (showNotification) showToast('Правила обновлены из файла!');
+        });
+    }
+
+    function saveCustomRules() {
+      const editor = document.getElementById('custom-rules-editor');
+      if (!editor) return;
+      playBeep(900, 0.08);
+      fetch('http://127.0.0.1:8085/api/rules/custom/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: editor.value })
+      })
+      .then(r => r.json())
+      .then(data => {
+        playBeep(1200, 0.1);
+        showToast(data.message || 'Правила сохранены!');
+        loadCustomRules();
+        pingBridge();
+      });
+    }
+
+    function appendRuleTemplate() {
+      const editor = document.getElementById('custom-rules-editor');
+      if (!editor) return;
+      editor.value += '\n# [Пользовательское правило]\n- Название/Ситуация: четкое указание категории (а/м, к/а, о/п, б/з, БК), сохранение чисел.\n';
+      editor.scrollTop = editor.scrollHeight;
+      showToast('Шаблон правила добавлен');
+    }
+
+    function syncGithubRules(manual = false) {
+      playBeep(800, 0.06);
+      if (manual) showToast('Синхронизация правил ПРО с GitHub...');
+      fetch('http://127.0.0.1:8085/api/rules/sync', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          if (data.updated) {
+            playBeep(1200, 0.15);
+            showToast('✅ Новые правила перекачаны с GitHub!');
+          } else if (manual) {
+            showToast('Правила ПРО уже актуальны (нет новых коммитов)');
+          }
+          pingBridge();
+        });
+    }
+
+    function viewMasterPromptModal() {
+      playBeep(700, 0.04);
+      fetch('http://127.0.0.1:8085/api/rules/master')
+        .then(r => r.json())
+        .then(data => {
+          document.getElementById('master-prompt-viewer').value = data.content || '';
+          document.getElementById('master-modal-sha').textContent = `Git Blob SHA: ${data.sha || 'неизвестен'}`;
+          document.getElementById('master-modal').classList.add('active');
+        });
+    }
+
+    function closeMasterModal() {
+      document.getElementById('master-modal').classList.remove('active');
+    }
+
+    /* ==========================================================================
+       ТЕСТЕР ПРО
+       ========================================================================== */
+    function setPreset(txt) {
+      playBeep(750, 0.03);
+      document.getElementById('ad-input').value = txt;
+      runAiEdit(false);
+    }
+
+    function runAiEdit(withSearch = false) {
+      const input = document.getElementById('ad-input').value.trim();
+      const output = document.getElementById('res-output');
+      const lengthBadge = document.getElementById('badge-length');
+      const timeBadge = document.getElementById('badge-time');
+
+      playBeep(900, 0.06);
+      output.textContent = withSearch ? 'Глубокий поиск в сети и редактирование...' : 'Обработка через DeepSeek (Camoufox)...';
+
+      const t0 = performance.now();
+      const payload = withSearch
+        ? { text: input, explanation: "проверить в сети и отредактировать по ПРО до 65 символов" }
+        : { prompt: input };
+
+      const url = withSearch ? 'http://127.0.0.1:8085/api/ai/teach_and_reedit' : 'http://127.0.0.1:8085/v1/chat/completions';
+
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(r => r.json())
+      .then(data => {
+        const elapsed = Math.round(performance.now() - t0);
+        const resText = data.result || data.content || (data.choices && data.choices[0] && data.choices[0].message.content) || '';
+        output.textContent = resText;
+
+        const len = resText.length;
+        if (lengthBadge) {
+          lengthBadge.textContent = `${len} / 65 СИМВ.`;
+          lengthBadge.className = len <= 65 ? 'badge-char-count valid' : 'badge-char-count invalid';
+        }
+        if (timeBadge) timeBadge.textContent = `${elapsed} МС`;
+
+        playBeep(len <= 65 ? 1150 : 350, 0.1);
+        showToast(`Готово (${elapsed} мс)!`);
+      })
+      .catch(err => {
+        output.textContent = `Ошибка: ${err}`;
+        showToast('Ошибка обращения к серверу!');
+      });
+    }
+
+    function copyResultText() {
+      const text = document.getElementById('res-output').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        playBeep(1000, 0.05);
+        showToast('Результат скопирован в буфер обмена!');
+      });
+    }
+
+    function transferToTeach() {
+      const raw = document.getElementById('ad-input').value;
+      switchTab('teach');
+      document.getElementById('teach-ad-input').value = raw;
+      document.getElementById('teach-exp-input').focus();
+      showToast('Объявление перенесено в блок дообучения');
+    }
+
+    function clearFastCache() {
+      playBeep(500, 0.06);
+      fetch('http://127.0.0.1:8085/api/cache/clear', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          playBeep(1100, 0.08);
+          showToast(data.message || 'Кэш ОЗУ очищен!');
+          pingBridge();
+        });
+    }
+
+    /* ==========================================================================
+       SAMP И MOONLOADER
+       ========================================================================== */
+    function fetchScriptStatus() {
+      fetch('http://127.0.0.1:8085/api/script/status')
+        .then(r => r.json())
+        .then(d => {
+          const cardStat = document.getElementById('card-lua-status');
+          const cardSub = document.getElementById('card-lua-sub');
+          const pathEl = document.getElementById('samp-script-path');
+          const szEl = document.getElementById('samp-script-size');
+
+          if (d.exists) {
+            if (cardStat) cardStat.textContent = 'ГОТОВ';
+            if (cardSub) cardSub.textContent = `● ${d.size_kb} КБ // ${d.modified}`;
+            if (pathEl) pathEl.textContent = d.path;
+            if (szEl) szEl.textContent = `Размер: ${d.size_kb} КБ | Изменен: ${d.modified}`;
+          } else {
+            if (cardStat) cardStat.textContent = 'НЕ НАЙДЕН';
+          }
+        });
+    }
+
+    function runLuaSyntaxCheck() {
+      playBeep(850, 0.07);
+      const box = document.getElementById('lua-check-box');
+      box.innerHTML = '<div class="log-line"><span class="log-time">[CHECK]</span><span>Запуск check_lua_syntax.py на сервере...</span></div>';
+
+      fetch('http://127.0.0.1:8085/api/script/check_syntax', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          box.innerHTML = '';
+          const lines = (data.output || '').split('\n');
+          lines.forEach(l => {
+            if (!l.trim()) return;
+            const lineEl = document.createElement('div');
+            lineEl.className = 'log-line';
+            const isOk = l.includes('PERFECT') || l.includes('0 syntax errors');
+            lineEl.innerHTML = `<span class="log-time">[LUA]</span><span style="color: ${isOk ? 'var(--emerald)' : 'var(--crimson)'}; font-weight: 700;">${l}</span>`;
+            box.appendChild(lineEl);
+          });
+          playBeep(data.returncode === 0 ? 1200 : 350, 0.12);
+          showToast(data.returncode === 0 ? 'Синтаксис Lua проверен: 0 ошибок!' : 'Обнаружены ошибки синтаксиса!');
+        });
+    }
+
+    /* ==========================================================================
+       ЖИВОЙ ТЕРМИНАЛ И ЛОГИ
+       ========================================================================== */
+    let logFilter = 'ALL';
+    let cachedLogs = [];
+
+    function fetchLiveLogs(scroll = false) {
+      fetch('http://127.0.0.1:8085/api/logs')
+        .then(r => r.json())
+        .then(d => {
+          cachedLogs = d.logs || [];
+          renderLogs(scroll);
+        });
+    }
+
+    function filterLogs(f) {
+      playBeep(700, 0.03);
+      logFilter = f;
+      renderLogs(true);
+      showToast(`Фильтр: ${f}`);
+    }
+
+    function renderLogs(scroll = false) {
+      const term = document.getElementById('terminal-logs');
+      if (!term) return;
+      term.innerHTML = '';
+
+      const filtered = cachedLogs.filter(l => {
+        if (logFilter === 'ALL') return true;
+        if (logFilter === 'Teach') return l.includes('Teach') || l.includes('Custom Rules');
+        if (logFilter === 'GitHub') return l.includes('GitHub');
+        if (logFilter === 'SMI') return l.includes('SMI Helper') || l.includes('Входящее');
+        if (logFilter === 'Camoufox') return l.includes('Camoufox') || l.includes('Аккаунт');
+        return true;
+      });
+
+      filtered.forEach(line => {
+        const div = document.createElement('div');
+        div.className = 'log-line';
+
+        let colorStyle = '';
+        if (line.includes('Teach') || line.includes('Custom Rules')) colorStyle = 'color: var(--emerald);';
+        else if (line.includes('GitHub')) colorStyle = 'color: var(--gold);';
+        else if (line.includes('Ошибка') || line.includes('Error')) colorStyle = 'color: var(--crimson);';
+        else if (line.includes('Кэш ОЗУ')) colorStyle = 'color: var(--cyan);';
+
+        div.innerHTML = `<span style="${colorStyle}">${line}</span>`;
+        term.appendChild(div);
+      });
+
+      if (scroll) term.scrollTop = term.scrollHeight;
+    }
+
+    function clearTerminalView() {
+      const term = document.getElementById('terminal-logs');
+      if (term) term.innerHTML = '';
+      showToast('Вид консоли очищен');
+    }
+
+    /* ==========================================================================
+       ФОНОВЫЙ КАНВАС И ИНИЦИАЛИЗАЦИЯ
+       ========================================================================== */
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    let parts = [];
+    for (let i = 0; i < 55; i++) {
+      parts.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.65,
+        vy: (Math.random() - 0.5) * 0.65,
+        color: Math.random() > 0.5 ? '#00f3ff' : '#b026ff'
+      });
+    }
+
+    function anim() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let p of parts) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = 0.35;
+        ctx.fill();
+      }
+      requestAnimationFrame(anim);
+    }
+    anim();
+
+    // Эквалайзер
+    const eq = document.getElementById('eq-bars');
+    if (eq) {
+      for (let i = 0; i < 28; i++) {
+        const b = document.createElement('div');
+        b.className = 'eq-bar';
+        b.style.animationDelay = `${(Math.random() * -1.5).toFixed(2)}s`;
+        eq.appendChild(b);
+      }
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      pingBridge();
+      loadAccounts();
+      fetchScriptStatus();
+      setInterval(pingBridge, 3000);
+      setInterval(fetchLiveLogs, 3000);
+    });
+  </script>
+</body>
+</html>
